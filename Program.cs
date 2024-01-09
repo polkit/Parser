@@ -1,4 +1,5 @@
-﻿using AngleSharp.Html.Parser;
+﻿using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
 using System.Net;
 
 namespace Parser
@@ -56,7 +57,8 @@ namespace Parser
                     {
                         Console.WriteLine("Write FileName. default= res or res_sectime");
                         var nfilename = Console.ReadLine();
-                        Fill(url, null);
+                        Console.WriteLine("Start");
+                        Fill(url, null, 0);
                         WriteCSV(nfilename, f);
                         break;
                     }
@@ -71,8 +73,8 @@ namespace Parser
                         if (File.Exists($"{path}.mcsv"))
                             path += $"_{DateTimeOffset.UtcNow.UtcTicks}";
                         path += ".mcsv";
-
-                        Fill(url, null);
+                        Console.WriteLine("Start");
+                        Fill(url, null, 0);
                         File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), path), Delln(Newtonsoft.Json.JsonConvert.SerializeObject(f)));
                         break;
                     }
@@ -88,7 +90,7 @@ namespace Parser
                             Console.WriteLine($"file {path} doesnt exist");
                             break;
                         }
-
+                        Console.WriteLine("Start");
                         var fs = Delln(File.ReadAllText(path));
                         var f = Newtonsoft.Json.JsonConvert.DeserializeObject<full>(fs);
                         WriteCSV(string.Empty, f);
@@ -136,14 +138,34 @@ namespace Parser
 
         private static full f = new full();
         private static string urlst = "https://www.siboma.ru";
-        private static void Fill(string url, string pparent)
+
+        private static string GetResp(string furl)
         {
-            var furl = $"{urlst}{url}";
             WebRequest reqGET = WebRequest.Create(furl);
             WebResponse resp = reqGET.GetResponse();
             Stream stream = resp.GetResponseStream();
             StreamReader sr = new StreamReader(stream);
-            string s = sr.ReadToEnd();
+            return sr.ReadToEnd();
+        }
+        private static void Fill(string url, string pparent, int count)
+        {
+            var furl = $"{urlst}{url}";
+
+
+            string s = string.Empty;
+            try
+            {
+                s = GetResp(furl);
+            }
+            catch
+            {
+                if (count < 5)
+                    Fill(url, pparent, count++);
+                else throw;
+            }
+
+
+
 
             var parser = new HtmlParser();
             var document = parser.ParseDocument(s);
@@ -158,7 +180,7 @@ namespace Parser
                     f.Fas.Add(ne);
                     Thread.Sleep(1000);
                     Console.WriteLine($"{ne.name}");
-                    Fill($"{ne.reflink}", ne.name);
+                    Fill($"{ne.reflink}", ne.name, 0);
                 }
             }
             else
