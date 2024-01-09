@@ -42,7 +42,6 @@ namespace Parser
     class Program
     {
 
-
         static void Main(string[] args)
         {
 
@@ -69,11 +68,12 @@ namespace Parser
                         if (string.IsNullOrEmpty(nfilename))
                             nfilename = "pres";
                         var path = Path.Combine(Directory.GetCurrentDirectory(), nfilename);
-                        if (File.Exists(path))
-                            path = Path.Combine(path, "_", DateTimeOffset.UtcNow.UtcTicks.ToString(), ".mcsv");
+                        if (File.Exists($"{path}.mcsv"))
+                            path += $"_{DateTimeOffset.UtcNow.UtcTicks}";
+                        path += ".mcsv";
 
                         Fill(url, null);
-                        File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), path), Newtonsoft.Json.JsonConvert.SerializeObject(f));
+                        File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), path), Delln(Newtonsoft.Json.JsonConvert.SerializeObject(f)));
                         break;
                     }
                 case "3":
@@ -89,7 +89,7 @@ namespace Parser
                             break;
                         }
 
-                        var fs = File.ReadAllText(path);
+                        var fs = Delln(File.ReadAllText(path));
                         var f = Newtonsoft.Json.JsonConvert.DeserializeObject<full>(fs);
                         WriteCSV(string.Empty, f);
                         break;
@@ -106,13 +106,20 @@ namespace Parser
             //Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(f));
 
         }
+        private static string Delln(string input)
+        {
+            var a = input.Replace("\\n", string.Empty);
+            a = a.Replace(Environment.NewLine, "");
+            return a;
+        }
         private static void WriteCSV(string fileName, full f)
         {
             if (string.IsNullOrEmpty(fileName))
                 fileName = "res";
             var path = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-            if (File.Exists(path))
-                path = Path.Combine(path, "_", DateTimeOffset.UtcNow.UtcTicks.ToString(), ".csv");
+            if (File.Exists($"{path}.csv"))
+                path += $"_{DateTimeOffset.UtcNow.UtcTicks}";
+            path += ".csv";
             List<string> text = new();
             text.Add($"modelname{CsvSeparator}parentlist{CsvSeparator}pos{CsvSeparator}group{CsvSeparator}name{CsvSeparator}price");
             foreach (var el in f.Fas)
